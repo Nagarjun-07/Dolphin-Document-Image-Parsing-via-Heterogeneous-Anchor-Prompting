@@ -1,0 +1,178 @@
+[
+  {
+    "label": "title",
+    "bbox": [
+      271,
+      188,
+      1194,
+      221
+    ],
+    "text": "LLaMA: Open and Efficient Foundation Language Models",
+    "reading_order": 0
+  },
+  {
+    "label": "author",
+    "bbox": [
+      313,
+      272,
+      1154,
+      317
+    ],
+    "text": "Hugo Touvron; Thibaut Lavril*, Gautier Izacard*, Xavier Martinet",
+    "reading_order": 1
+  },
+  {
+    "label": "para",
+    "bbox": [
+      269,
+      317,
+      1201,
+      425
+    ],
+    "text": "Marie-Anne Lachaux, Timothee Lacroix, Baptiste Rozière, Naman Goyal\nEric Hambro, Faisal Azhar, Aurelien Rodriguez, Armand Joulin\nEdouard Grave*Guillaume Lample*",
+    "reading_order": 2
+  },
+  {
+    "label": "para",
+    "bbox": [
+      685,
+      440,
+      795,
+      482
+    ],
+    "text": "Meta AI",
+    "reading_order": 3
+  },
+  {
+    "label": "sec",
+    "bbox": [
+      376,
+      524,
+      502,
+      565
+    ],
+    "text": "\\begin{abstract}",
+    "reading_order": 4
+  },
+  {
+    "label": "para",
+    "bbox": [
+      209,
+      586,
+      675,
+      946
+    ],
+    "text": "We introduce LLaMA, a collection of founda-\ntion language models ranging from 7B to 65B\nparameters. We train our models on trillions\nof tokens, and show that it is possible to train\nstate-of-the-art models using publicly avail-\nable datasets exclusively, without resorting\nto proprietary and inaccessible datasets. In\nparticular, LLaMA-13B outperforms GPT-3\n(175B) on most benchmarks, and LLaMA-\n65B is competitive with the best models,\nChinchilla-70B and PaLM-540B. We release\nall our models to the research community $^1$ .",
+    "reading_order": 5
+  },
+  {
+    "label": "sec",
+    "bbox": [
+      167,
+      964,
+      376,
+      1006
+    ],
+    "text": "1 Introduction",
+    "reading_order": 6
+  },
+  {
+    "label": "para",
+    "bbox": [
+      167,
+      1027,
+      718,
+      1498
+    ],
+    "text": "Large Languages Models (LLMs) trained on mas-\nsive corpora of texts have shown their ability to per-\nform new tasks from textual instructions or from a\nfew examples ( Brown et al. , 2020 ) . These few-shot\nproperties first appeared when scaling models to a\nsufficient size ( Kaplan et al. , 2020 ) , resulting in a\nline of work that focuses on further scaling these\nmodels ( Chowdhery et al. , 2022 ; Rae et al. , 2021 ) .\nThese efforts are based on the assumption that\nmore parameters will lead to better performance.\nHowever, recent work from Hoffmann et al. ( 2022 )\nshows that, for a given compute budget, the best\nperformances are not achieved by the largest mod-\nels, but by smaller models trained on more data.",
+    "reading_order": 7
+  },
+  {
+    "label": "para",
+    "bbox": [
+      167,
+      1506,
+      717,
+      1844
+    ],
+    "text": "The objective of the scaling laws from Hoff-\nmann et al. ( 2022 ) is to determine how to best\nscale the dataset and model sizes for a particular\ntraining compute budget. However, this objective\ndisregards the inference budget, which becomes\ncritical when serving a language model at scale.\nIn this context, given a target level of performance,\nthe preferred model is not the fastest to train but the\nfastest at inference, and although it may be cheaper\nto train a large model to reach a certain level of",
+    "reading_order": 8
+  },
+  {
+    "label": "para",
+    "bbox": [
+      753,
+      539,
+      1304,
+      734
+    ],
+    "text": "performance, a smaller one trained longer will\nultimately be cheaper at inference. For instance,\nalthough Hoffmann et al. ( 2022 ) recommends\ntraining a 10B model on 200B tokens, we find\nthat the performance of a 7B model continues to\nimprove even after 1T tokens.",
+    "reading_order": 9
+  },
+  {
+    "label": "para",
+    "bbox": [
+      753,
+      769,
+      1305,
+      1236
+    ],
+    "text": "The focus of this work is to train a series of\nlanguage models that achieve the best possible per-\nformance at various inference budgets, by training\non more tokens than what is typically used. The\nresulting models, called LLaMA , ranges from 7B\nto 65B parameters with competitive performance\ncompared to the best existing LLMs. For instance,\nLLaMA-13B outperforms GPT-3 on most bench-\nmarks, despite being 10 $\\times$ smaller. We believe that\nthis model will help democratize the access and\nstudy of LLMs, since it can be run on a single GPU.\nAt the higher-end of the scale, our 65B-parameter\nmodel is also competitive with the best large lan-\nguage models such as Chinchilla or PaLM-540B.",
+    "reading_order": 10
+  },
+  {
+    "label": "para",
+    "bbox": [
+      753,
+      1257,
+      1305,
+      1601
+    ],
+    "text": "Unlike Chinchilla, PaLM, or GPT-3, we only\nuse publicly available data, making our work com-\npatible with open-sourcing, while most existing\nmodels rely on data which is either not publicly\navailable or undocumented (e.g. “ Books – 2TB ” or\n“ Social media conversations ” ). There exist some\nexceptions, notably OPT ( Zhang et al. , 2022 ) ,\nGPT-NeoX ( Black et al. , 2022 ) , BLOOM ( Scao\net al. , 2022 ) and GLM ( Zeng et al. , 2022 ) , but none\nthat are competitive with PaLM-62B or Chinchilla.",
+    "reading_order": 11
+  },
+  {
+    "label": "para",
+    "bbox": [
+      753,
+      1634,
+      1304,
+      1933
+    ],
+    "text": "In the rest of this paper, we present an overview\nof the modifications we made to the transformer\narchitecture ( Vaswani et al. , 2017 ) , as well as our\ntraining method. We then report the performance of\nour models and compare with others LLMs on a set\nof standard benchmarks. Finally, we expose some\nof the biases and toxicity encoded in our models,\nusing some of the most recent benchmarks from\nthe responsible AI community.",
+    "reading_order": 12
+  },
+  {
+    "label": "fnote",
+    "bbox": [
+      167,
+      1844,
+      712,
+      1907
+    ],
+    "text": "* Equal contribution.\nCorrespondence:\n{htouvron\nthibautlav,gizacard,egrave,glample}@meta.com",
+    "reading_order": 13
+  },
+  {
+    "label": "fnote",
+    "bbox": [
+      209,
+      1907,
+      632,
+      1931
+    ],
+    "text": "https://github.com/facebookresearch/llama",
+    "reading_order": 14
+  },
+  {
+    "label": "watermark",
+    "bbox": [
+      20,
+      649,
+      83,
+      1530
+    ],
+    "text": "arXiv:2302.1397lvl [cs.CL] 27 Feb 2023",
+    "reading_order": 15
+  }
+]

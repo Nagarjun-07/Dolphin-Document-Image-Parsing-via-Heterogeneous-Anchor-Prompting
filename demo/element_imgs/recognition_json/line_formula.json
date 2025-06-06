@@ -1,0 +1,6 @@
+[
+  {
+    "label": "formula",
+    "text": "q _ { \\sigma } ( \\pmb x _ { t - 1 } | \\pmb x _ { t } , \\pmb x _ { 0 } ) = \\mathcal { N } \\left( \\sqrt { \\alpha _ { t - 1 } } \\pmb x _ { 0 } + \\sqrt { 1 - \\alpha _ { t - 1 } - \\sigma _ { t } ^ { 2 } } \\cdot \\frac { \\pmb x _ { t } - \\sqrt { \\alpha _ { t } } \\pmb x _ { 0 } } { \\sqrt { 1 - \\alpha _ { t } } } , \\sigma _ { t } ^ { 2 } \\pmb I \\right) ."
+  }
+]

@@ -1,4 +1,4 @@
-""" 
+"""
 Copyright (c) 2025 Bytedance Ltd. and/or its affiliates
 SPDX-License-Identifier: MIT
 """
@@ -22,57 +22,39 @@ class DOLPHIN:
         Args:
             model_id_or_path: Path to local model or Hugging Face model ID
         """
-        # Load model from local path or Hugging Face hub
         self.processor = AutoProcessor.from_pretrained(model_id_or_path)
-        self.model = VisionEncoderDecoderModel.from_pretrained(model_id_or_path)
-        self.model.eval()
-        
-        # Set device and precision
+
+        # Set device and precision based on availability
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model.to(self.device)
-        self.model = self.model.half()  # Always use half precision by default
-        
-        # set tokenizer
+        dtype = torch.float16 if self.device == "cuda" else torch.float32
+
+        self.model = VisionEncoderDecoderModel.from_pretrained(
+            model_id_or_path, torch_dtype=dtype
+        ).to(self.device)
+        self.model.eval()
+
         self.tokenizer = self.processor.tokenizer
-        
+
     def chat(self, prompt, image):
-        """Process an image or batch of images with the given prompt(s)
-        
-        Args:
-            prompt: Text prompt or list of prompts to guide the model
-            image: PIL Image or list of PIL Images to process
-            
-        Returns:
-            Generated text or list of texts from the model
-        """
-        # Check if we're dealing with a batch
+        """Process an image or batch of images with the given prompt(s)"""
         is_batch = isinstance(image, list)
-        
+
         if not is_batch:
-            # Single image, wrap it in a list for consistent processing
             images = [image]
             prompts = [prompt]
         else:
-            # Batch of images
             images = image
             prompts = prompt if isinstance(prompt, list) else [prompt] * len(images)
-        
-        # Prepare image
+
         batch_inputs = self.processor(images, return_tensors="pt", padding=True)
-        batch_pixel_values = batch_inputs.pixel_values.half().to(self.device)
-        
-        # Prepare prompt
+        batch_pixel_values = batch_inputs.pixel_values.to(self.device)
+
         prompts = [f"<s>{p} <Answer/>" for p in prompts]
-        batch_prompt_inputs = self.tokenizer(
-            prompts,
-            add_special_tokens=False,
-            return_tensors="pt"
-        )
+        batch_prompt_inputs = self.tokenizer(prompts, add_special_tokens=False, return_tensors="pt")
 
         batch_prompt_ids = batch_prompt_inputs.input_ids.to(self.device)
         batch_attention_mask = batch_prompt_inputs.attention_mask.to(self.device)
-        
-        # Generate text
+
         outputs = self.model.generate(
             pixel_values=batch_pixel_values,
             decoder_input_ids=batch_prompt_ids,
@@ -86,35 +68,27 @@ class DOLPHIN:
             return_dict_in_generate=True,
             do_sample=False,
             num_beams=1,
-            repetition_penalty=1.1
+            repetition_penalty=1.1,
         )
-        
-        # Process output
+
         sequences = self.tokenizer.batch_decode(outputs.sequences, skip_special_tokens=False)
-        
-        # Clean prompt text from output
+
         results = []
         for i, sequence in enumerate(sequences):
             cleaned = sequence.replace(prompts[i], "").replace("<pad>", "").replace("</s>", "").strip()
             results.append(cleaned)
-            
-        # Return a single result for single image input
-        if not is_batch:
-            return results[0]
-        return results
+
+        return results[0] if not is_batch else results
 
 
 def process_page(image_path, model, save_dir, max_batch_size=None):
     """Parse document images with two stages"""
-    # Stage 1: Page-level layout and reading order parsing
     pil_image = Image.open(image_path).convert("RGB")
     layout_output = model.chat("Parse the reading order of this document.", pil_image)
 
-    # Stage 2: Element-level content parsing
     padded_image, dims = prepare_image(pil_image)
     recognition_results = process_elements(layout_output, padded_image, dims, model, max_batch_size)
 
-    # Save outputs
     json_path = save_outputs(recognition_results, image_path, save_dir)
 
     return json_path, recognition_results
@@ -124,36 +98,27 @@ def process_elements(layout_results, padded_image, dims, model, max_batch_size=N
     """Parse all document elements with parallel decoding"""
     layout_results = parse_layout_string(layout_results)
 
-    # Store text and table elements separately
-    text_elements = []  # Text elements
-    table_elements = []  # Table elements
-    figure_results = []  # Image elements (no processing needed)
+    text_elements = []
+    table_elements = []
+    figure_results = []
     previous_box = None
     reading_order = 0
 
-    # Collect elements to process and group by type
     for bbox, label in layout_results:
         try:
-            # Adjust coordinates
             x1, y1, x2, y2, orig_x1, orig_y1, orig_x2, orig_y2, previous_box = process_coordinates(
                 bbox, padded_image, dims, previous_box
             )
-
-            # Crop and parse element
             cropped = padded_image[y1:y2, x1:x2]
             if cropped.size > 0:
                 if label == "fig":
-                    # For figure regions, add empty text result immediately
-                    figure_results.append(
-                        {
-                            "label": label,
-                            "bbox": [orig_x1, orig_y1, orig_x2, orig_y2],
-                            "text": "",
-                            "reading_order": reading_order,
-                        }
-                    )
+                    figure_results.append({
+                        "label": label,
+                        "bbox": [orig_x1, orig_y1, orig_x2, orig_y2],
+                        "text": "",
+                        "reading_order": reading_order,
+                    })
                 else:
-                    # Prepare element for parsing
                     pil_crop = Image.fromarray(cv2.cvtColor(cropped, cv2.COLOR_BGR2RGB))
                     element_info = {
                         "crop": pil_crop,
@@ -161,11 +126,9 @@ def process_elements(layout_results, padded_image, dims, model, max_batch_size=N
                         "bbox": [orig_x1, orig_y1, orig_x2, orig_y2],
                         "reading_order": reading_order,
                     }
-                    
-                    # Group by type
                     if label == "tab":
                         table_elements.append(element_info)
-                    else:  # Text elements
+                    else:
                         text_elements.append(element_info)
 
             reading_order += 1
@@ -174,46 +137,32 @@ def process_elements(layout_results, padded_image, dims, model, max_batch_size=N
             print(f"Error processing bbox with label {label}: {str(e)}")
             continue
 
-    # Initialize results list
     recognition_results = figure_results.copy()
-    
-    # Process text elements (in batches)
+
     if text_elements:
         text_results = process_element_batch(text_elements, model, "Read text in the image.", max_batch_size)
         recognition_results.extend(text_results)
-    
-    # Process table elements (in batches)
+
     if table_elements:
         table_results = process_element_batch(table_elements, model, "Parse the table in the image.", max_batch_size)
         recognition_results.extend(table_results)
 
-    # Sort elements by reading order
     recognition_results.sort(key=lambda x: x.get("reading_order", 0))
-
     return recognition_results
 
 
 def process_element_batch(elements, model, prompt, max_batch_size=None):
-    """Process elements of the same type in batches"""
     results = []
-    
-    # Determine batch size
     batch_size = len(elements)
     if max_batch_size is not None and max_batch_size > 0:
         batch_size = min(batch_size, max_batch_size)
-    
-    # Process in batches
+
     for i in range(0, len(elements), batch_size):
-        batch_elements = elements[i:i+batch_size]
+        batch_elements = elements[i:i + batch_size]
         crops_list = [elem["crop"] for elem in batch_elements]
-        
-        # Use the same prompt for all elements in the batch
         prompts_list = [prompt] * len(crops_list)
-        
-        # Batch inference
         batch_results = model.chat(prompts_list, crops_list)
-        
-        # Add results
+
         for j, result in enumerate(batch_results):
             elem = batch_elements[j]
             results.append({
@@ -222,7 +171,7 @@ def process_element_batch(elements, model, prompt, max_batch_size=None):
                 "text": result.strip(),
                 "reading_order": elem["reading_order"],
             })
-    
+
     return results
 
 
@@ -244,10 +193,8 @@ def main():
     )
     args = parser.parse_args()
 
-    # Load Model
     model = DOLPHIN(args.model_path)
 
-    # Collect Document Images
     if os.path.isdir(args.input_path):
         image_files = []
         for ext in [".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"]:
@@ -266,7 +213,6 @@ def main():
     total_samples = len(image_files)
     print(f"\nTotal samples to process: {total_samples}")
 
-    # Process All Document Images
     for image_path in image_files:
         print(f"\nProcessing {image_path}")
         try:
@@ -276,9 +222,7 @@ def main():
                 save_dir=save_dir,
                 max_batch_size=args.max_batch_size,
             )
-
             print(f"Processing completed. Results saved to {save_dir}")
-
         except Exception as e:
             print(f"Error processing {image_path}: {str(e)}")
             continue
