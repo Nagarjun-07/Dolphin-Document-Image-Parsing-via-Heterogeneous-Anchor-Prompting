@@ -93,12 +93,6 @@ Dolphin achieves **state-of-the-art accuracy**, supports **parallel decoding**, 
 ```bash
 git clone https://github.com/ByteDance/Dolphin.git
 cd Dolphin
-# Dolphin: Document Image Parsing via Heterogeneous Anchor Prompting
-
-<div align="center">
-  <img src="./assets/dolphin.png" width="300" alt="Dolphin Logo" />
-</div>
-
 ---
 
 ## Installation
