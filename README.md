@@ -67,6 +67,10 @@ Document image parsing poses significant challenges due to the coexistence of va
 Dolphin achieves **state-of-the-art accuracy**, supports **parallel decoding**, and integrates seamlessly with the **Hugging Face ecosystem**.
 
 ---
+![WhatsApp Image 2025-06-07 at 01 17 15_ea78c99a](https://github.com/user-attachments/assets/9484ff87-a696-4c8f-8b39-391da60901be)
+
+![WhatsApp Image 2025-06-07 at 01 04 23_50b9f647](https://github.com/user-attachments/assets/052d51c7-46af-45c7-9bac-ab8374301b54)
+![WhatsApp Image 2025-06-07 at 01 19 16_687f1850](https://github.com/user-attachments/assets/b13ffe07-7809-4851-82d5-b029151b6975)
 
 ## 🚀 Demo
 
@@ -89,3 +93,31 @@ Dolphin achieves **state-of-the-art accuracy**, supports **parallel decoding**, 
 ```bash
 git clone https://github.com/ByteDance/Dolphin.git
 cd Dolphin
+# Dolphin: Document Image Parsing via Heterogeneous Anchor Prompting
+
+<div align="center">
+  <img src="./assets/dolphin.png" width="300" alt="Dolphin Logo" />
+</div>
+
+---
+
+## Installation
+
+Install the dependencies:
+pip install -r requirements.txt
+
+```
+# Download the model from Hugging Face Hub
+git lfs install
+git clone https://huggingface.co/ByteDance/Dolphin ./hf_model
+
+# Or use the Hugging Face CLI
+huggingface-cli download ByteDance/Dolphin --local-dir ./hf_model
+
+![image](https://github.com/user-attachments/assets/359d47f4-3220-4e55-a559-f2a11034edc1)
+
+**
+---
+
+If you want, I can help you customize or add a table of contents and badges too!
+**
